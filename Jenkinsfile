@@ -1,16 +1,15 @@
 pipeline{
     agent any
-    tools {
-      maven 'maven3'
-    }
+
     environment {
       DOCKER_TAG = getVersion()
     }
+    
     stages{
         stage('SCM'){
             steps{
                 git credentialsId: 'github', 
-                    url: 'https://github.com/javahometech/dockeransiblejenkins'
+                    url: 'https://github.com/satishgudapati/dockeransiblejenkins.git'
             }
         }
         
@@ -22,23 +21,22 @@ pipeline{
         
         stage('Docker Build'){
             steps{
-                sh "docker build . -t kammana/hariapp:${DOCKER_TAG} "
+                sh "docker build . -t optimisticsatish/javamavendocker:${DOCKER_TAG} "
             }
         }
         
-        stage('DockerHub Push'){
+        stage('Docker Push to Registry'){
+            
             steps{
-                withCredentials([string(credentialsId: 'docker-hub', variable: 'dockerHubPwd')]) {
-                    sh "docker login -u kammana -p ${dockerHubPwd}"
+                withCredentials([string(credentialsId: 'docker', variable: 'passwd')]) {
+                    sh "docker login -u satish200691 -p ${passwd}"
                 }
-                
-                sh "docker push kammana/hariapp:${DOCKER_TAG} "
+                sh "docker push optimisticsatish/javamavendocker:${DOCKER_TAG} "
             }
         }
-        
-        stage('Docker Deploy'){
+        stage('Deploying to server'){
             steps{
-              ansiblePlaybook credentialsId: 'dev-server', disableHostKeyChecking: true, extras: "-e DOCKER_TAG=${DOCKER_TAG}", installation: 'ansible', inventory: 'dev.inv', playbook: 'deploy-docker.yml'
+               ansiblePlaybook credentialsId: 'DeploymentServer', disableHostKeyChecking: true, extras: '-e DOCKER_TAG=${DOCKER_TAG}', installation: 'ansible', inventory: 'inventory', playbook: 'ansibleplaybook'
             }
         }
     }
